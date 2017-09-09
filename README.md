@@ -1,11 +1,11 @@
 # limiter
 
-An implementation of the [Token Bucket](https://en.wikipedia.org/wiki/Token_bucket) rate limiting algorithm
+A lock free implementation of the [Token Bucket](https://en.wikipedia.org/wiki/Token_bucket) rate limiting algorithm.
 
 ## Usage
 
 ```go
-     //max # of bytes/s to allow
+    //max # of bytes/s to allow
 	maxThroughput := 1000
 	// wrapped io.Writer interface
 	writer := getWriter()	
@@ -14,3 +14,7 @@ An implementation of the [Token Bucket](https://en.wikipedia.org/wiki/Token_buck
 	n, err := limiter.Write(buffer)
 	fmt.Printf("written %d bytes to wrapped stream - err: %v", n, err)
 ```
+
+## License
+
+Licensed under the MIT License
