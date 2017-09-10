@@ -49,6 +49,8 @@ func (bucket TokenBucket) Write(p []byte) (n int, err error) {
 				keepGoing = false
 			}
 		default:
+			// return tokens to the bucket
+			bucket.addTokens(acquiredTokens)
 			keepGoing = false
 		}
 	}
