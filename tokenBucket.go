@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-//New Creates a new TokenBucket which will limit the rate to the value specified in the bytesPerSecond argument
-func New(wrapped io.Writer, bytesPerSecond int) TokenBucket {
+//NewLimiter Creates a new TokenBucket which will limit the rate to the value specified in the bytesPerSecond argument
+func NewLimiter(wrapped io.Writer, bytesPerSecond int) TokenBucket {
 
 	timeResolution := time.Second
 

@@ -7,7 +7,7 @@ import (
 
 func TestThrottling(t *testing.T) {
 
-	limiter := New(os.Stdout, 5)
+	limiter := NewLimiter(os.Stdout, 5)
 	bytes := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	_, err := limiter.Write(bytes)
 
@@ -19,7 +19,7 @@ func TestThrottling(t *testing.T) {
 
 func TestHappyPath(t *testing.T) {
 
-	limiter := New(os.Stdout, 10)
+	limiter := NewLimiter(os.Stdout, 10)
 	bytes := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 	written, _ := limiter.Write(bytes)
