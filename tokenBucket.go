@@ -3,7 +3,6 @@ package limiter
 import (
 	"errors"
 	"io"
-	"sync"
 	"time"
 )
 
@@ -31,16 +30,22 @@ type TokenBucket struct {
 
 func (bucket TokenBucket) Write(p []byte) (n int, err error) {
 
-	neededBuffer := len(p)
-	acquiredBuffer := 0
+	neededTokens := len(p)
+	acquiredTokens := 0
 
+	// pre check that there is enough tokens before draining the bucket
+	if len(bucket.availableTokens) < neededTokens {
+		return 0, errors.New("throttled")
+	}
+
+	// in order to address potential race conditions actually drain the bucket from the tokens
 	keepGoing := true
 	for keepGoing {
 
 		select {
-		case addition := <-bucket.availableTokens:
-			acquiredBuffer += addition
-			if acquiredBuffer >= neededBuffer {
+		case token := <-bucket.availableTokens:
+			acquiredTokens += token
+			if acquiredTokens >= neededTokens {
 				keepGoing = false
 			}
 		default:
@@ -48,7 +53,7 @@ func (bucket TokenBucket) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	if acquiredBuffer >= neededBuffer {
+	if acquiredTokens >= neededTokens {
 
 		return bucket.wrapped.Write(p)
 	}
@@ -56,31 +61,28 @@ func (bucket TokenBucket) Write(p []byte) (n int, err error) {
 	return 0, errors.New("throttled")
 }
 
-func (bucket *TokenBucket) init(bytesPerSecond int) {
+func (bucket *TokenBucket) init(numberOfTokens int) {
 
-	var wg = sync.WaitGroup{}
-	wg.Add(1)
+	bucket.addTokens(numberOfTokens)
+	go bucket.pumpTokens(numberOfTokens)
 
-	go bucket.startPumpingTokens(bytesPerSecond, &wg)
-	wg.Wait()
 }
 
-func (bucket *TokenBucket) startPumpingTokens(bytesPerSecond int, wg *sync.WaitGroup) {
-
-	var once sync.Once
-	onceBody := func() {
-		wg.Done()
-	}
+func (bucket *TokenBucket) pumpTokens(numberOfTokens int) {
 
 	for {
 		for range bucket.ticker.C {
-			for i := 0; i < bytesPerSecond; i++ {
-				select {
-				case bucket.availableTokens <- 1:
-				default:
-				}
-			}
-			once.Do(onceBody)
+			bucket.addTokens(numberOfTokens)
+		}
+	}
+}
+
+func (bucket *TokenBucket) addTokens(numberOfTokens int) {
+
+	for i := 0; i < numberOfTokens; i++ {
+		select {
+		case bucket.availableTokens <- 1:
+		default:
 		}
 	}
 }
